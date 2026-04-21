@@ -1,0 +1,67 @@
+---
+title: "updateKeyValue — change the value of an existing key"
+description: "updateKeyValue finds the named key in the specified section and sets it to a new value. Throws if the section or key does not exist."
+---
+
+`updateKeyValue` locates an existing `data` block inside the named section and replaces its value in-place. Unlike [`addKeyValue`](/api/add-key-value) with `override`, this function is intended strictly for updating keys that are known to exist; it throws if either the section or the key is absent.
+
+## Signature
+
+```typescript
+function updateKeyValue(
+  obj: IniObject,
+  section: string,
+  key: string,
+  value: string
+): Block
+```
+
+## Parameters
+
+<ParamField body="obj" type="IniObject" required>
+  The `IniObject` to mutate. The target section is resolved by name within this array.
+</ParamField>
+
+<ParamField body="section" type="string" required>
+  The name of the section that contains the key to update. Lookup is case-sensitive.
+</ParamField>
+
+<ParamField body="key" type="string" required>
+  The name of the key whose value should be changed. Must already exist in the section.
+</ParamField>
+
+<ParamField body="value" type="string" required>
+  The new value to assign. Replaces the current value of the matched `data` block.
+</ParamField>
+
+## Return value
+
+<ResponseField name="Block" type="Block">
+  The updated `data` block with its value set to the new string: `{ type: 'data', key, value }`.
+</ResponseField>
+
+## Example
+
+```typescript
+import { parseIni, updateKeyValue, stringifyIni } from 'js-ini-parser';
+
+const ini = parseIni(`[server]\nhost=localhost\nport=8080`, {});
+
+const updated = updateKeyValue(ini, 'server', 'port', '9090');
+console.log(updated);
+// { type: 'data', key: 'port', value: '9090' }
+
+console.log(stringifyIni(ini, {}));
+// [server]
+// host=localhost
+// port=9090
+```
+
+<Warning>
+  `updateKeyValue` throws an `Error` in two situations:
+
+  - **Section not found** — no section with the given name exists in `obj`.
+  - **Key not found** — the named key does not exist in the located section.
+
+  Use [`addKeyValue`](/api/add-key-value) with `{ override: true }` if you want an upsert-style operation.
+</Warning>

@@ -1,0 +1,63 @@
+---
+title: "getSection — look up a section by name"
+description: "getSection searches an IniObject for a Section whose name matches sectionName and returns it, or undefined if no matching section exists in the array."
+---
+
+`getSection` performs a linear search through an `IniObject` and returns the first `Section` whose `section` field matches `sectionName`. It returns `undefined` when no match is found, so callers should check the result before accessing its properties.
+
+## Signature
+
+```typescript
+function getSection(
+  sections: Section[],
+  sectionName: string
+): Section | undefined
+```
+
+## Parameters
+
+<ParamField body="sections" type="Section[]" required>
+  The `IniObject` (i.e. `Section[]`) to search. Typically the value returned by `parseIni`.
+</ParamField>
+
+<ParamField body="sectionName" type="string" required>
+  The name to look for. Matching is case-sensitive and must equal the `section` field exactly, without surrounding brackets.
+</ParamField>
+
+## Return value
+
+<ResponseField name="Section | undefined" type="Section | undefined">
+  The matching `Section` object (`{ section: string, blocks: Block[] }`), or `undefined` if no section with that name exists in the array.
+</ResponseField>
+
+## Example
+
+```typescript
+import { parseIni, getSection } from 'js-ini-parser';
+
+const ini = parseIni(`
+[database]
+host=localhost
+port=5432
+
+[cache]
+ttl=300
+`, {});
+
+const db = getSection(ini, 'database');
+
+if (db === undefined) {
+  console.error('Section not found');
+} else {
+  console.log(db.section);  // 'database'
+  console.log(db.blocks);
+  // [
+  //   { type: 'data', key: 'host', value: 'localhost' },
+  //   { type: 'data', key: 'port', value: '5432' },
+  // ]
+}
+
+// Looking up a section that does not exist
+const missing = getSection(ini, 'logging');
+console.log(missing); // undefined
+```

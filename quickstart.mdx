@@ -1,80 +1,108 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Get started with js-ini-parser"
+description: "Learn how to install js-ini-parser, import parseIni and stringifyIni, and write your first INI parse and stringify operation in under 5 minutes."
 ---
 
-## Get started in three steps
+This guide walks you through installing js-ini-parser and writing your first parse and stringify operation. By the end you'll have a working TypeScript snippet that reads an INI string, accesses section data, and converts it back to text.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Install the package">
+    Add js-ini-parser to your project using your preferred package manager.
 
-### Step 1: Set up your local environment
+    <CodeGroup>
+      ```bash npm
+      npm install js-ini-parser
+      ```
+      ```bash yarn
+      yarn add js-ini-parser
+      ```
+      ```bash pnpm
+      pnpm add js-ini-parser
+      ```
+    </CodeGroup>
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Import the functions">
+    js-ini-parser ships both ESM and CommonJS builds.
 
-### Step 2: Deploy your changes
+    <Tabs>
+      <Tab title="ESM (TypeScript / Node.js ESM)">
+        ```typescript
+        import { parseIni, stringifyIni } from "js-ini-parser";
+        ```
+      </Tab>
+      <Tab title="CommonJS">
+        ```javascript
+        const { parseIni, stringifyIni } = require("js-ini-parser");
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+  <Step title="Parse an INI string">
+    Pass your INI content to `parseIni` along with a `ParserOptions` object.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    ```typescript
+    import { parseIni } from "js-ini-parser";
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    const ini = `
+    [server]
+    ; this is a comment
+    host = localhost
+    port = 8080
+    `;
 
-### Step 3: Go live
+    const parsed = parseIni(ini, {
+      allowGlobalSection: false,
+      allowEmptyValue: false,
+    });
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    console.log(parsed);
+    ```
+
+    <Note>
+      `parseIni` returns an `IniObject`, which is an array of `Section` objects. Each `Section` has a `section` name and a `blocks` array of `Block` entries (either data key-value pairs or comments). See the [Types reference](/api/types) for details.
+    </Note>
+  </Step>
+
+  <Step title="Stringify back to INI text">
+    Use `stringifyIni` to convert the parsed object back to an INI-formatted string.
+
+    ```typescript
+    import { parseIni, stringifyIni } from "js-ini-parser";
+
+    const ini = `
+    [server]
+    ; this is a comment
+    host = localhost
+    port = 8080
+    `;
+
+    const parsed = parseIni(ini, {});
+    const text = stringifyIni(parsed, {});
+
+    console.log(text);
+    // [server]
+    // ; this is a comment
+    // host=localhost
+    // port=8080
+    ```
+  </Step>
+</Steps>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Parsing guide" icon="file-lines" href="/guides/parsing">
+    Learn all parser options including global sections and empty values.
+  </Card>
+  <Card title="Stringifying guide" icon="arrow-right-arrow-left" href="/guides/stringifying">
+    Understand the output format and round-trip behavior.
+  </Card>
+  <Card title="Editing INI files" icon="pen-to-square" href="/guides/editing">
+    Add sections, update keys, and insert comments programmatically.
+  </Card>
+  <Card title="API reference" icon="code" href="/api/parse-ini">
+    Full function signatures and parameter documentation.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

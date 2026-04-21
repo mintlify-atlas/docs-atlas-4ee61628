@@ -1,0 +1,73 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "js-ini-parser",
+  "projectDescription": "A zero-dependency TypeScript/JavaScript library for parsing and stringifying INI files while preserving comments and supporting global sections.",
+  "theme": "luma",
+  "primaryColor": "#241c24",
+  "lightColor": "#f4f4f4",
+  "darkColor": "#cb0404",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["guides/parsing", "guides/stringifying", "guides/editing"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Functions",
+            "pages": [
+              "api/parse-ini",
+              "api/stringify-ini",
+              "api/add-section",
+              "api/add-key-value",
+              "api/update-key-value",
+              "api/add-comment",
+              "api/get-section"
+            ]
+          },
+          {
+            "group": "Types",
+            "pages": ["api/types"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Parse INI text strings into structured JavaScript objects",
+    "Stringify parsed objects back to INI-formatted text",
+    "Preserves comments (`;` prefixed lines) and associates them with key-value pairs",
+    "Global section support for key-value pairs outside named sections",
+    "Empty value support via configurable parser options",
+    "Zero dependencies — works in Node.js and browsers",
+    "Full TypeScript types included",
+    "Utility functions for programmatic INI editing (addSection, addKeyValue, updateKeyValue, addComment)"
+  ],
+  "publicApiSurface": [
+    "parseIni(text: string, options: ParserOptions): IniObject",
+    "stringifyIni(sections: IniObject, options: ParserOptions): string",
+    "addSection(obj: IniObject, sectionName: string): Section",
+    "addKeyValue(obj: IniObject, section: string, key: string, value: string, options: AddSectionOptions): Block",
+    "updateKeyValue(obj: IniObject, section: string, key: string, value: string): Block",
+    "addComment(obj: IniObject, section: string, comment: string, options: AddCommentOptions): Block",
+    "getSection(sections: Section[], sectionName: string): Section | undefined",
+    "class Line",
+    "type ParserOptions",
+    "type IniObject",
+    "type Section",
+    "type Block",
+    "type AddSectionOptions",
+    "type AddCommentOptions"
+  ]
+}

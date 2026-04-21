@@ -1,0 +1,145 @@
+---
+title: "Parsing INI files with js-ini-parser"
+description: "Learn how to parse INI strings and files using parseIni, configure parser options, and work with the returned IniObject structure."
+---
+
+This page covers how to convert raw INI text into a structured JavaScript object using `parseIni`. You will learn how to configure the parser, understand the `IniObject` output shape, and handle edge cases like global sections and empty values.
+
+## Basic parsing
+
+Call `parseIni` with the INI text and an options object. The second argument is required, but all options are optional — pass `{}` to use defaults.
+
+```typescript
+import { parseIni } from 'js-ini-parser'
+
+const text = `
+[server]
+host=127.0.0.1
+port=8080
+`
+
+const result = parseIni(text, {})
+```
+
+`parseIni` returns an `IniObject`, which is `Section[]`.
+
+## Parser options
+
+<ParamField path="allowGlobalSection" type="boolean" default="false">
+  When `true`, key-value pairs and comments that appear before any section header are collected into a synthetic global section. When `false` (the default), any content outside a section is ignored with a warning.
+</ParamField>
+
+<ParamField path="globalSectionName" type="string" default="''">
+  The name assigned to the global section when `allowGlobalSection` is `true`. Has no effect when `allowGlobalSection` is `false`.
+</ParamField>
+
+<ParamField path="allowEmptyValue" type="boolean" default="false">
+  When `true`, keys with no value (e.g. `host=`) are parsed and stored with an empty string value. When `false`, such lines are skipped and an error is logged to the console.
+</ParamField>
+
+<ParamField path="debug" type="boolean" default="false">
+  When `true`, the parser emits `console.debug` messages at each parsing step, which can help diagnose unexpected results.
+</ParamField>
+
+## Parsing from a file
+
+In a Node.js environment, read the file with `fs.promises.readFile` and pass the result to `parseIni`.
+
+```typescript
+import { readFile } from 'fs/promises'
+import { parseIni } from 'js-ini-parser'
+
+const text = await readFile('./config.ini', 'utf-8')
+const result = parseIni(text, {})
+```
+
+## Understanding the output
+
+`parseIni` returns an `IniObject`, defined as:
+
+```typescript
+type Block =
+  | { type: 'comment'; text: string }
+  | { type: 'data'; key: string; value: string; comment?: Block }
+
+type Section = {
+  section: string
+  blocks: Block[]
+}
+
+type IniObject = Section[]
+```
+
+Each `Section` has a `section` string (the name from `[sectionName]`) and a `blocks` array containing the key-value pairs and comments found inside it. A `data` block may carry an optional `comment` block when a comment line immediately precedes it in the source.
+
+Given this INI input:
+
+```typescript
+const text = `
+[database]
+host=localhost
+port=5432
+`
+
+const result = parseIni(text, {})
+// result:
+// [
+//   {
+//     section: 'database',
+//     blocks: [
+//       { type: 'data', key: 'host', value: 'localhost' },
+//       { type: 'data', key: 'port',  value: '5432' },
+//     ],
+//   },
+// ]
+```
+
+## Global sections
+
+Set `allowGlobalSection: true` to capture content that appears before the first section header. Use `globalSectionName` to control what that section is called in the output.
+
+```typescript
+import { parseIni } from 'js-ini-parser'
+
+const text = `
+env=production
+[server]
+port=8080
+`
+
+const result = parseIni(text, {
+  allowGlobalSection: true,
+  globalSectionName: 'global',
+})
+
+// result[0].section === 'global'
+// result[0].blocks[0] === { type: 'data', key: 'env', value: 'production' }
+```
+
+When `allowGlobalSection` is `false`, the `env=production` line above would be silently dropped and a warning logged to `console.warn`.
+
+## Empty values
+
+By default, a key with no value (e.g. `host=`) is considered invalid and the line is skipped. Set `allowEmptyValue: true` to keep such entries with an empty string value.
+
+```typescript
+import { parseIni, stringifyIni } from 'js-ini-parser'
+
+const text = `
+[server]
+host=
+port=8080
+`
+
+const result = parseIni(text, { allowEmptyValue: true })
+console.log(stringifyIni(result, {}))
+// [server]
+// host=
+// port=8080
+```
+
+Without `allowEmptyValue: true`, the `host=` line is omitted from the output and an error is printed to `console.error`.
+
+<Tip>
+  Enable `debug: true` when a section or key-value pair is missing from the parsed result. The debug output traces each line the parser encounters and shows how comments are linked to keys, making it straightforward to locate the problem.
+</Tip>

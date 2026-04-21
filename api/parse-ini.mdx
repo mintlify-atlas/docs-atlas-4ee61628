@@ -1,0 +1,80 @@
+---
+title: "parseIni — parse INI text to a structured object"
+description: "parseIni converts an INI-formatted string into an IniObject (array of Section). Supports comments, global sections, and empty values via ParserOptions."
+---
+
+`parseIni` reads a raw INI-formatted string and returns a structured `IniObject` — an array of `Section` objects, each containing a list of `Block` entries representing key-value pairs and comments.
+
+## Signature
+
+```typescript
+function parseIni(text: string, options: ParserOptions): IniObject
+```
+
+## Parameters
+
+<ParamField body="text" type="string" required>
+  The raw INI content to parse. Lines are split on `\n`; blank lines are ignored.
+</ParamField>
+
+<ParamField body="options" type="ParserOptions" required>
+  Parser configuration object. See [Types](/api/types) for the full `ParserOptions` definition. Pass an empty object `{}` to use all defaults.
+
+  | Field | Type | Default | Description |
+  |---|---|---|---|
+  | `allowGlobalSection` | `boolean` | `false` | Collect key-value pairs that appear before the first section header. |
+  | `globalSectionName` | `string` | `''` | Name assigned to the implicit global section when `allowGlobalSection` is `true`. |
+  | `allowEmptyValue` | `boolean` | `false` | When `true`, keys with no value (`key=`) are kept; when `false` they are skipped with a console error. |
+  | `debug` | `boolean` | `false` | Log parsing steps to `console.debug`. |
+</ParamField>
+
+## Return value
+
+<ResponseField name="IniObject" type="Section[]">
+  An array of `Section` objects. Each `Section` has a `section` string (the header name) and a `blocks` array of `Block` entries. A `Block` is either a `data` record (`{ type: 'data', key, value }`) or a `comment` record (`{ type: 'comment', text }`).
+</ResponseField>
+
+## Example
+
+```typescript
+import { parseIni } from 'js-ini-parser';
+
+const raw = `
+[database]
+; primary host
+host=localhost
+port=5432
+
+[cache]
+ttl=300
+`;
+
+const ini = parseIni(raw, {
+  allowEmptyValue: false,
+  debug: false,
+});
+
+console.log(ini);
+// [
+//   {
+//     section: 'database',
+//     blocks: [
+//       {
+//         type: 'data',
+//         key: 'host',
+//         value: 'localhost',
+//         comment: { type: 'comment', text: '; primary host' },
+//       },
+//       { type: 'data', key: 'port', value: '5432' },
+//     ],
+//   },
+//   {
+//     section: 'cache',
+//     blocks: [{ type: 'data', key: 'ttl', value: '300' }],
+//   },
+// ]
+```
+
+<Note>
+  Passing `{}` as the options argument is safe and applies all defaults. No fields in `ParserOptions` are required.
+</Note>

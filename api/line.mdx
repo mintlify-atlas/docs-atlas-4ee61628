@@ -1,0 +1,112 @@
+---
+title: "Line class — low-level INI line classifier"
+description: "Line wraps a single INI text line and exposes isComment, isSection, isKeyValuePair, and isEmptyKeyValuePair classifiers used by the parseIni parser."
+---
+
+`Line` is a utility class exported by js-ini-parser that wraps a single text line and its line number. It provides classifier methods (`isComment`, `isSection`, `isKeyValuePair`, `isEmptyKeyValuePair`) used by the parser to identify the type of each line during parsing.
+
+<Note>
+  `Line` is exported as part of the public API, but most users will not need to use it directly. It is primarily useful if you want to build your own INI line validation logic on top of the same classification rules the parser uses.
+</Note>
+
+## Constructor
+
+```typescript
+class Line {
+  constructor(public text: string, public number: number)
+}
+```
+
+<ParamField body="text" type="string" required>
+  The text content of the line. Should already be trimmed if you want consistent classification behavior (the parser always trims lines before wrapping them in `Line`).
+</ParamField>
+
+<ParamField body="number" type="number" required>
+  The zero-based line index within the source string. Used for diagnostic output.
+</ParamField>
+
+## Methods
+
+### isComment()
+
+```typescript
+isComment(): boolean
+```
+
+Returns `true` if the line starts with `;`. Does not require any surrounding whitespace.
+
+```typescript
+import { Line } from 'js-ini-parser';
+
+new Line('; this is a comment', 0).isComment() // true
+new Line('; note', 0).isComment()              // true
+new Line('host=localhost', 0).isComment()      // false
+```
+
+### isSection()
+
+```typescript
+isSection(): boolean
+```
+
+Returns `true` if the line starts with `[` and ends with `]`.
+
+```typescript
+new Line('[server]', 0).isSection()     // true
+new Line('[database]', 0).isSection()   // true
+new Line('host=localhost', 0).isSection() // false
+```
+
+### isKeyValuePair()
+
+```typescript
+isKeyValuePair(): boolean
+```
+
+Returns `true` if the line contains an `=` sign, does not start with `=`, is not a comment, is not a section header, and has a non-empty value. Lines with an empty value (`key=`) return `false` here — they are handled by `isEmptyKeyValuePair`.
+
+```typescript
+new Line('host=localhost', 0).isKeyValuePair()   // true
+new Line('URL={params}/test?value={app}&loc=', 0).isKeyValuePair() // true
+new Line('=value', 0).isKeyValuePair()           // false
+new Line('host=', 0).isKeyValuePair()            // false (empty value)
+new Line('', 0).isKeyValuePair()                 // false
+```
+
+### isEmptyKeyValuePair()
+
+```typescript
+isEmptyKeyValuePair(): boolean
+```
+
+Returns `true` if the line contains an `=` sign with no value after it (e.g. `host=`). Returns `false` for comment lines, section headers, and lines shorter than two characters.
+
+```typescript
+new Line('host=', 0).isEmptyKeyValuePair()    // true
+new Line('key=', 0).isEmptyKeyValuePair()     // true
+new Line('host=localhost', 0).isEmptyKeyValuePair() // false
+```
+
+## Example
+
+```typescript
+import { Line } from 'js-ini-parser';
+
+const lines = [
+  '[server]',
+  '; bind address',
+  'host=0.0.0.0',
+  'port=',
+].map((text, i) => new Line(text, i));
+
+for (const line of lines) {
+  if (line.isSection())            console.log(`Section:    ${line.text}`);
+  else if (line.isComment())       console.log(`Comment:    ${line.text}`);
+  else if (line.isKeyValuePair())  console.log(`Key-value:  ${line.text}`);
+  else if (line.isEmptyKeyValuePair()) console.log(`Empty val:  ${line.text}`);
+}
+// Section:    [server]
+// Comment:    ; bind address
+// Key-value:  host=0.0.0.0
+// Empty val:  port=
+```

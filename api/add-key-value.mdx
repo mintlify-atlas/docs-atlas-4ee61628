@@ -1,0 +1,76 @@
+---
+title: "addKeyValue — insert a key-value pair into a section"
+description: "addKeyValue adds a new key-value pair to the named section in an IniObject. Throws if the section is missing or if the key already exists without override."
+---
+
+`addKeyValue` locates the named section inside an `IniObject` and appends a new `data` block containing the given key and value. If the key already exists you must set `options.override` to `true` to overwrite it; otherwise the function throws.
+
+## Signature
+
+```typescript
+function addKeyValue(
+  obj: IniObject,
+  section: string,
+  key: string,
+  value: string,
+  options: AddSectionOptions
+): Block
+```
+
+## Parameters
+
+<ParamField body="obj" type="IniObject" required>
+  The `IniObject` to mutate. The target section is looked up by name inside this array.
+</ParamField>
+
+<ParamField body="section" type="string" required>
+  The name of the section that should receive the new key-value pair. The lookup is case-sensitive and must match the `section` field of an existing `Section`.
+</ParamField>
+
+<ParamField body="key" type="string" required>
+  The key to insert. Must be unique within the section unless `options.override` is `true`.
+</ParamField>
+
+<ParamField body="value" type="string" required>
+  The string value to assign to the key.
+</ParamField>
+
+<ParamField body="options" type="AddSectionOptions" required>
+  Configuration for the insert operation.
+
+  | Field | Type | Default | Description |
+  |---|---|---|---|
+  | `override` | `boolean` | `false` | When `true`, overwrites the value of an existing key instead of throwing. |
+</ParamField>
+
+## Return value
+
+<ResponseField name="Block" type="Block">
+  The `data` block that was added or updated: `{ type: 'data', key, value }`.
+</ResponseField>
+
+## Example
+
+```typescript
+import { parseIni, addSection, addKeyValue, stringifyIni } from 'js-ini-parser';
+
+const ini = parseIni('[database]\nhost=localhost', {});
+
+// Insert a new key
+addKeyValue(ini, 'database', 'port', '5432', {});
+
+// Overwrite an existing key
+addKeyValue(ini, 'database', 'host', '10.0.0.1', { override: true });
+
+console.log(stringifyIni(ini, {}));
+// [database]
+// host=10.0.0.1
+// port=5432
+```
+
+<Warning>
+  `addKeyValue` throws an `Error` in two situations:
+
+  - **Section not found** — no section with the given name exists in `obj`.
+  - **Key already exists** — the key is already present in the section and `options.override` is not `true`.
+</Warning>

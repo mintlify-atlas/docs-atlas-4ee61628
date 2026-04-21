@@ -1,0 +1,79 @@
+---
+title: "What is js-ini-parser?"
+description: "js-ini-parser is a zero-dependency TypeScript library that parses and stringifies INI config files, preserving comments and supporting global sections."
+---
+
+js-ini-parser is a TypeScript library for reading and writing INI configuration files. INI files are plain-text config files organized into named sections, with key-value pairs separated by `=` and comments prefixed by `;`. Many tools and applications use them — from PHP and Python runtimes to game engines and system utilities.
+
+Most parsers silently discard comments when they read an INI file, which means round-tripping a config through parse and stringify destroys any annotations your users have written. js-ini-parser tracks every comment block and re-emits it when you call `stringifyIni`, so comments survive the full parse→edit→stringify cycle.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Zero dependencies" icon="feather">
+    The library ships as a single TypeScript module with no transitive runtime dependencies.
+  </Card>
+  <Card title="Comment preservation" icon="comment">
+    Comments starting with `;` are parsed into the object model and emitted again on stringify.
+  </Card>
+  <Card title="Global section support" icon="globe-pointer">
+    Key-value pairs that appear before any section header can be collected under a configurable global section name.
+  </Card>
+  <Card title="Works in Node.js and browsers" icon="globe">
+    Ships both ESM and CommonJS builds. Run it server-side or bundle it for the browser.
+  </Card>
+  <Card title="Full TypeScript types" icon="shield-check">
+    All public functions and data structures are fully typed. Import `IniObject`, `Section`, `Block`, and `ParserOptions` directly alongside the functions.
+  </Card>
+  <Card title="Empty value support" icon="minus">
+    Opt in to parsing keys with no value (e.g. `key=`) by setting `allowEmptyValue: true` in parser options.
+  </Card>
+</CardGroup>
+
+## How it works
+
+The library exposes two primary functions: `parseIni` and `stringifyIni`. The typical workflow is:
+
+1. **Parse** — convert an INI string into an `IniObject` (an array of `Section` objects, each containing typed `Block` entries).
+2. **Edit** — modify the in-memory structure using utility functions or by directly manipulating the array.
+3. **Stringify** — convert the structure back to an INI-formatted string, with all comments intact.
+
+```typescript
+import { parseIni, stringifyIni } from "js-ini-parser";
+
+const ini = `
+[database]
+; primary connection
+host = localhost
+port = 5432
+`;
+
+const parsed = parseIni(ini, { allowEmptyValue: false });
+// parsed is an IniObject — an array of Section objects
+
+const text = stringifyIni(parsed, {});
+// text is an INI-formatted string with comments preserved
+```
+
+## INI file format
+
+INI files consist of sections, key-value pairs, and optional comments:
+
+- **Sections** are declared with a name in square brackets: `[section-name]`
+- **Key-value pairs** use `=` as the separator: `key = value`
+- **Comments** start with `;` and can appear before a key or stand alone within a section
+
+```ini
+; application configuration
+
+[server]
+; server hostname
+host = localhost
+port = 8080
+debug = false
+
+[database]
+host = 127.0.0.1
+port = 5432
+name = myapp
+```

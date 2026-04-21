@@ -1,0 +1,87 @@
+---
+title: "addComment — insert a comment into a section"
+description: "addComment adds a comment block to the specified section, either as a free-standing comment or attached above a named key via AddCommentOptions."
+---
+
+`addComment` inserts a `comment` block into the named section of an `IniObject`. By default the comment is appended to the end of the section. When `options.attachToKey` is provided the comment is spliced into the block list immediately before the specified key, which causes `stringifyIni` to emit it on the line directly above that key.
+
+## Signature
+
+```typescript
+function addComment(
+  obj: IniObject,
+  section: string,
+  comment: string,
+  options: AddCommentOptions
+): Block
+```
+
+## Parameters
+
+<ParamField body="obj" type="IniObject" required>
+  The `IniObject` to mutate. The target section is looked up by name.
+</ParamField>
+
+<ParamField body="section" type="string" required>
+  The name of the section that should receive the comment. Lookup is case-sensitive.
+</ParamField>
+
+<ParamField body="comment" type="string" required>
+  The comment text to insert. Do **not** include a leading `;` — it is prepended automatically.
+</ParamField>
+
+<ParamField body="options" type="AddCommentOptions" required>
+  Controls placement of the comment.
+
+  | Field | Type | Default | Description |
+  |---|---|---|---|
+  | `attachToKey` | `string` | `undefined` | If set, the comment is inserted directly before the block whose `key` matches this value. |
+</ParamField>
+
+## Return value
+
+<ResponseField name="Block" type="Block">
+  The comment block that was inserted: `{ type: 'comment', text: ';...' }`.
+</ResponseField>
+
+<Note>
+  The `;` prefix is prepended automatically. Pass only the message text, for example `"primary database host"` — the stored and serialized text will be `";primary database host"`.
+</Note>
+
+## Examples
+
+### Free-standing comment
+
+A comment appended to the end of a section with no key attachment.
+
+```typescript
+import { parseIni, addSection, addKeyValue, addComment, stringifyIni } from 'js-ini-parser';
+
+const ini = parseIni('[database]\nhost=localhost\nport=5432', {});
+
+addComment(ini, 'database', ' connection settings', {});
+
+console.log(stringifyIni(ini, {}));
+// [database]
+// host=localhost
+// port=5432
+// ; connection settings
+```
+
+### Comment attached above a key
+
+Using `attachToKey` places the comment on the line directly before the named key in the serialized output.
+
+```typescript
+import { parseIni, addComment, stringifyIni } from 'js-ini-parser';
+
+const ini = parseIni('[server]\nhost=0.0.0.0\nport=8080', {});
+
+addComment(ini, 'server', ' TCP port the server listens on', { attachToKey: 'port' });
+
+console.log(stringifyIni(ini, {}));
+// [server]
+// host=0.0.0.0
+// ; TCP port the server listens on
+// port=8080
+```

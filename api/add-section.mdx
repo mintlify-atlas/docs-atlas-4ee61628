@@ -1,0 +1,50 @@
+---
+title: "addSection — append a new section to an IniObject"
+description: "addSection appends a new empty section to an IniObject array in-place and returns the created Section, ready for addKeyValue or addComment calls."
+---
+
+`addSection` mutates an existing `IniObject` by appending a new, empty `Section` to the end of the array. The newly created section is returned so you can immediately add blocks to it using [`addKeyValue`](/api/add-key-value) or [`addComment`](/api/add-comment).
+
+## Signature
+
+```typescript
+function addSection(obj: IniObject, sectionName: string): Section
+```
+
+## Parameters
+
+<ParamField body="obj" type="IniObject" required>
+  The `IniObject` (i.e. `Section[]`) to mutate. The new section is pushed onto this array in-place.
+</ParamField>
+
+<ParamField body="sectionName" type="string" required>
+  The name for the new section. This becomes the header text between brackets in the serialized INI (e.g. `[database]`). Section names are case-sensitive.
+</ParamField>
+
+## Return value
+
+<ResponseField name="Section" type="Section">
+  The newly created `Section` object: `{ section: sectionName, blocks: [] }`. Note that the same section is pushed onto `obj`; mutating the returned value also mutates the entry inside `obj`.
+</ResponseField>
+
+## Example
+
+```typescript
+import { parseIni, addSection, addKeyValue, stringifyIni } from 'js-ini-parser';
+
+const ini = parseIni('[app]\nname=MyApp', {});
+
+// Append a new [logging] section
+const loggingSection = addSection(ini, 'logging');
+
+// Add key-value pairs to the new section
+addKeyValue(ini, 'logging', 'level', 'info', {});
+addKeyValue(ini, 'logging', 'file', '/var/log/app.log', {});
+
+console.log(stringifyIni(ini, {}));
+// [app]
+// name=MyApp
+// [logging]
+// level=info
+// file=/var/log/app.log
+```

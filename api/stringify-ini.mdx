@@ -1,0 +1,58 @@
+---
+title: "stringifyIni — convert IniObject back to INI text"
+description: "stringifyIni serializes an IniObject (array of Sections with Blocks) back into a valid INI-formatted string, preserving comments and keys."
+---
+
+`stringifyIni` takes a structured `IniObject` produced by `parseIni` (or built manually) and serializes it back into an INI-formatted string. Section headers, key-value pairs, and comments are all preserved in output order.
+
+## Signature
+
+```typescript
+function stringifyIni(sections: IniObject, options: ParserOptions): string
+```
+
+## Parameters
+
+<ParamField body="sections" type="IniObject" required>
+  The parsed object to convert. `IniObject` is an alias for `Section[]`. Each `Section` must have a `section` string and a `blocks` array of `Block` entries.
+</ParamField>
+
+<ParamField body="options" type="ParserOptions" required>
+  Parser configuration object. This parameter is accepted for API consistency but is **not currently used** by `stringifyIni`. Pass `{}`.
+</ParamField>
+
+## Return value
+
+Returns a `string` containing the full INI representation. Each section is written as `[name]` followed by its blocks on separate lines. Comments attached to a data block are emitted on the line immediately before the key-value pair.
+
+## Example — round-trip parse and stringify
+
+```typescript
+import { parseIni, stringifyIni } from 'js-ini-parser';
+
+const original = `[server]
+; bind address
+host=0.0.0.0
+port=8080`;
+
+// Parse to IniObject
+const ini = parseIni(original, {});
+
+// Modify a value directly
+const serverSection = ini.find(s => s.section === 'server');
+const portBlock = serverSection?.blocks.find(
+  b => b.type === 'data' && b.key === 'port'
+);
+if (portBlock && portBlock.type === 'data') {
+  portBlock.value = '9090';
+}
+
+// Serialize back to INI text
+const output = stringifyIni(ini, {});
+
+console.log(output);
+// [server]
+// ; bind address
+// host=0.0.0.0
+// port=9090
+```

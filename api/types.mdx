@@ -1,0 +1,154 @@
+---
+title: "TypeScript types exported from js-ini-parser"
+description: "Reference for all TypeScript types exported by js-ini-parser: IniObject, Section, Block, ParserOptions, AddSectionOptions, and AddCommentOptions."
+---
+
+js-ini-parser exports all its TypeScript types alongside its functions, so you can use them directly in typed code without any extra imports. `IniObject` and `Section` describe the parsed data structure, `Block` represents individual entries within a section, and `ParserOptions`, `AddSectionOptions`, and `AddCommentOptions` control the behavior of the library's functions.
+
+## IniObject
+
+```typescript
+type IniObject = Section[]
+```
+
+An alias for `Section[]`. This is the return type of `parseIni` and the accepted input type for `stringifyIni` and all editing functions (`addSection`, `addKeyValue`, `addComment`, `updateKeyValue`, `getSection`).
+
+## Section
+
+```typescript
+type Section = {
+  section: string
+  blocks: Block[]
+}
+```
+
+Represents a single `[header]` block and all the entries beneath it.
+
+<ResponseField name="section" type="string" required>
+  The section name as it appears between brackets in the INI file. For example, the header `[server]` produces a `section` value of `"server"`.
+</ResponseField>
+
+<ResponseField name="blocks" type="Block[]" required>
+  An ordered array of data and comment blocks that belong to this section. See [Block](#block) below.
+</ResponseField>
+
+## Block
+
+```typescript
+type Block =
+  | { type: 'comment'; text: string }
+  | { type: 'data'; key: string; value: string; comment?: Block }
+```
+
+A union type representing either a standalone comment line or a key-value pair. The `type` discriminant lets you narrow the variant at runtime.
+
+**Comment block** — a standalone comment line (starts with `;`):
+
+<ResponseField name="type" type='"comment"' required>
+  Discriminant. Always `"comment"` for this variant.
+</ResponseField>
+
+<ResponseField name="text" type="string" required>
+  The full comment text, including the leading `;` character (e.g., `"; primary host"`).
+</ResponseField>
+
+**Data block** — a key-value pair:
+
+<ResponseField name="type" type='"data"' required>
+  Discriminant. Always `"data"` for this variant.
+</ResponseField>
+
+<ResponseField name="key" type="string" required>
+  The key name to the left of the `=` sign, trimmed of whitespace.
+</ResponseField>
+
+<ResponseField name="value" type="string" required>
+  The value to the right of the `=` sign, trimmed of whitespace.
+</ResponseField>
+
+<ResponseField name="comment" type="Block">
+  An optional attached comment block. When a comment line immediately precedes a key-value pair in the INI source, the parser links it here.
+
+  <Expandable title="comment properties">
+    <ResponseField name="type" type='"comment"' required>
+      Always `"comment"`.
+    </ResponseField>
+    <ResponseField name="text" type="string" required>
+      The full comment text, including the leading `;`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## ParserOptions
+
+```typescript
+type ParserOptions = {
+  allowGlobalSection?: boolean
+  globalSectionName?: string
+  allowEmptyValue?: boolean
+  debug?: boolean
+}
+```
+
+Configuration object passed to `parseIni` and `stringifyIni`.
+
+<ResponseField name="allowGlobalSection" type="boolean" default="false">
+  When `true`, key-value pairs that appear before the first section header are collected into an implicit global section rather than being silently ignored.
+</ResponseField>
+
+<ResponseField name="globalSectionName" type="string" default="''">
+  The name assigned to the implicit global section when `allowGlobalSection` is `true`. Has no effect when `allowGlobalSection` is `false`.
+</ResponseField>
+
+<ResponseField name="allowEmptyValue" type="boolean" default="false">
+  When `true`, keys with no value (`key=`) are kept as data blocks with an empty string value. When `false`, they are skipped and a `console.error` is emitted.
+</ResponseField>
+
+<ResponseField name="debug" type="boolean" default="false">
+  When `true`, the parser emits detailed parsing steps via `console.debug`.
+</ResponseField>
+
+## AddSectionOptions
+
+```typescript
+type AddSectionOptions = {
+  override?: boolean
+}
+```
+
+Options passed to `addKeyValue`.
+
+<ResponseField name="override" type="boolean" default="false">
+  When `true`, `addKeyValue` updates the value of an existing key instead of throwing an error. When `false` (the default), calling `addKeyValue` with a key that already exists in the target section throws `Error: Key <key> already exists in section <section>, see options.override`.
+</ResponseField>
+
+## AddCommentOptions
+
+```typescript
+type AddCommentOptions = {
+  attachToKey?: string
+}
+```
+
+Options passed to `addComment`.
+
+<ResponseField name="attachToKey" type="string">
+  When set, the comment is spliced into the section's block list immediately before the named key, so that `stringifyIni` emits the comment on the line directly above that key-value pair.
+</ResponseField>
+
+## Usage example
+
+```typescript
+import type {
+  IniObject,
+  Section,
+  Block,
+  ParserOptions,
+  AddSectionOptions,
+  AddCommentOptions,
+} from "js-ini-parser";
+```
+
+<Tip>
+  Use `import type { ... }` for type-only imports. TypeScript erases these at compile time, so they add no runtime overhead and make your import intent explicit.
+</Tip>

@@ -1,0 +1,104 @@
+---
+title: "Converting INI objects back to text"
+description: "Use stringifyIni to convert a parsed IniObject back into an INI-formatted string, preserving the structure and comments from parsing."
+---
+
+This page covers how to turn a parsed `IniObject` back into a plain INI string using `stringifyIni`. The function is the counterpart to `parseIni` and is the standard way to serialize any `IniObject` — whether it came from parsing or was built programmatically.
+
+## Basic stringify
+
+Pass a parsed `IniObject` and an options object to `stringifyIni`. The options argument is required.
+
+```typescript
+import { parseIni, stringifyIni } from 'js-ini-parser'
+
+const text = `
+[server]
+host=127.0.0.1
+port=8080
+`
+
+const obj = parseIni(text, {})
+const output = stringifyIni(obj, {})
+
+console.log(output)
+// [server]
+// host=127.0.0.1
+// port=8080
+```
+
+## Round-trip example
+
+Parse an INI string, modify a value directly on the `IniObject`, then stringify the result back to text.
+
+```typescript
+import { parseIni, stringifyIni } from 'js-ini-parser'
+
+const text = `
+[version]
+version=1.1.1
+[server]
+host=127.0.0.1
+`
+
+const obj = parseIni(text, { allowEmptyValue: true })
+
+// Manually update a block value
+const versionSection = obj.find(s => s.section === 'version')
+const versionBlock = versionSection?.blocks.find(
+  b => b.type === 'data' && b.key === 'version'
+)
+if (versionBlock && versionBlock.type === 'data') {
+  versionBlock.value = '1.2.0'
+}
+
+const output = stringifyIni(obj, {})
+console.log(output)
+// [version]
+// version=1.2.0
+// [server]
+// host=127.0.0.1
+```
+
+Prefer the `updateKeyValue` utility function for in-place updates — see the [editing guide](/guides/editing).
+
+## How stringifyIni handles comments
+
+Comments parsed from the source are preserved and re-emitted in the output. A comment that is attached to a key (i.e. the comment immediately precedes the key in the source) is placed on the line directly before that key. Free-standing comments appear at the position they occupy in the `blocks` array.
+
+```typescript
+import { parseIni, stringifyIni } from 'js-ini-parser'
+
+const text = `
+[super]
+; superman
+name=Homelander
+organization=Vought
+; info 1
+; info 2
+`
+
+const obj = parseIni(text, {})
+const output = stringifyIni(obj, {})
+
+console.log(output)
+// [super]
+// ; superman
+// name=Homelander
+// organization=Vought
+// ; info 1
+// ; info 2
+```
+
+The comment `; superman` was linked to the `name` key during parsing, so it is written on the line before `name=Homelander` in the output.
+
+## Output format notes
+
+- Key-value pairs are written as `key=value` with no spaces around the `=`.
+- Each section is opened by a `[sectionName]` header on its own line.
+- Comments use a `;` prefix (added automatically by `addComment` if you build the object programmatically).
+- Sections are separated by a single newline; there are no blank lines between sections or between blocks.
+
+<Note>
+  The `options` parameter is accepted by `stringifyIni` but is not currently used. Pass an empty object `{}` to keep your code compatible with future versions of the library that may introduce stringify options.
+</Note>

@@ -1,0 +1,194 @@
+---
+title: "Editing INI objects programmatically"
+description: "Use js-ini-parser utility functions to add sections, insert and update key-value pairs, and attach inline comments to specific keys in an IniObject."
+---
+
+This page covers the utility functions that let you modify an `IniObject` in place: `addSection`, `addKeyValue`, `updateKeyValue`, `addComment`, and `getSection`. These functions are useful when you want to build or modify an INI structure without manipulating the array directly.
+
+## Adding a section
+
+`addSection(obj, sectionName)` appends a new empty section to the `IniObject` and returns a `Section`.
+
+```typescript
+import { parseIni, addSection, stringifyIni } from 'js-ini-parser'
+
+const obj = parseIni('', {})
+addSection(obj, 'database')
+
+console.log(stringifyIni(obj, {}))
+// [database]
+```
+
+You can add multiple sections to the same object:
+
+```typescript
+import { parseIni, addSection, stringifyIni } from 'js-ini-parser'
+
+const obj = parseIni('[database]', {})
+addSection(obj, 'cache')
+
+console.log(stringifyIni(obj, {}))
+// [database]
+// [cache]
+```
+
+## Adding a key-value pair
+
+`addKeyValue(obj, section, key, value, options)` inserts a new `data` block into the named section and returns the created `Block`.
+
+```typescript
+import { parseIni, addSection, addKeyValue, stringifyIni } from 'js-ini-parser'
+
+const obj = parseIni('', {})
+addSection(obj, 'server')
+addKeyValue(obj, 'server', 'host', '127.0.0.1', {})
+addKeyValue(obj, 'server', 'port', '8080', {})
+
+console.log(stringifyIni(obj, {}))
+// [server]
+// host=127.0.0.1
+// port=8080
+```
+
+To overwrite an existing key, pass `{ override: true }`:
+
+```typescript
+addKeyValue(obj, 'server', 'host', '0.0.0.0', { override: true })
+```
+
+<Warning>
+  `addKeyValue` throws an `Error` if the section does not exist. Call `addSection` first if you are building the object from scratch.
+
+  It also throws if the key already exists in the section, unless you pass `{ override: true }`. Without the override flag, the existing value is left unchanged and an error is raised.
+</Warning>
+
+## Updating a key-value pair
+
+`updateKeyValue(obj, section, key, value)` finds an existing key in the named section, updates its value in place, and returns the modified `Block`.
+
+```typescript
+import { parseIni, updateKeyValue, stringifyIni } from 'js-ini-parser'
+
+const text = `
+[version]
+version=1.1.1
+[server]
+host=127.0.0.1
+`
+
+const obj = parseIni(text, { allowEmptyValue: true })
+updateKeyValue(obj, 'version', 'version', '1.2.0')
+
+console.log(stringifyIni(obj, {}))
+// [version]
+// version=1.2.0
+// [server]
+// host=127.0.0.1
+```
+
+<Warning>
+  `updateKeyValue` throws an `Error` if the section is not found, or if the key does not exist within that section. Use `addKeyValue` to create a key that may not exist yet.
+</Warning>
+
+## Adding a comment
+
+`addComment(obj, section, comment, options)` adds a comment block to the named section and returns the created `Block`. The `comment` string you pass should not include a leading `;` — the function prepends it automatically.
+
+**Free-standing comment** (appended to the end of the section's block list):
+
+```typescript
+import { parseIni, addComment, stringifyIni } from 'js-ini-parser'
+
+const obj = parseIni('[server]\nhost=1.1.1.1', {})
+addComment(obj, 'server', 'Next version coming soon!', {})
+
+console.log(stringifyIni(obj, {}))
+// [server]
+// host=1.1.1.1
+// ;Next version coming soon!
+```
+
+**Attached to a key** (inserted on the line immediately before the named key):
+
+```typescript
+import { parseIni, addKeyValue, addComment, stringifyIni } from 'js-ini-parser'
+
+const obj = parseIni('[server]\nhost=1.1.1.1', {})
+addComment(obj, 'server', 'Use 1.1.1.1 in production', { attachToKey: 'host' })
+
+console.log(stringifyIni(obj, {}))
+// [server]
+// ;Use 1.1.1.1 in production
+// host=1.1.1.1
+```
+
+Pass `{ attachToKey: 'keyName' }` to insert the comment directly before the specified key in the output. The `attachToKey` option is particularly useful when you want to document a specific setting inline.
+
+## Getting a section
+
+`getSection(sections, sectionName)` looks up a section by name and returns the `Section` object, or `undefined` if not found.
+
+```typescript
+import { parseIni, getSection } from 'js-ini-parser'
+
+const obj = parseIni('[server]\nhost=127.0.0.1', {})
+const section = getSection(obj, 'server')
+
+if (section) {
+  console.log(section.section) // 'server'
+  console.log(section.blocks)  // [{ type: 'data', key: 'host', value: '127.0.0.1' }]
+}
+```
+
+## Complete example
+
+The following example builds a configuration object from scratch, adds sections, keys, and comments, updates a value, then serializes the result.
+
+```typescript
+import {
+  parseIni,
+  addSection,
+  addKeyValue,
+  addComment,
+  updateKeyValue,
+  stringifyIni,
+} from 'js-ini-parser'
+
+// Start with an empty document
+const obj = parseIni('', {})
+
+// Add a [server] section with keys
+addSection(obj, 'server')
+addKeyValue(obj, 'server', 'host', '127.0.0.1', {})
+addKeyValue(obj, 'server', 'port', '8080', {})
+
+// Attach a comment to the host key
+addComment(obj, 'server', 'Override with SERVER_HOST in production', {
+  attachToKey: 'host',
+})
+
+// Add a [database] section
+addSection(obj, 'database')
+addKeyValue(obj, 'database', 'url', 'postgres://localhost:5432/app', {})
+addKeyValue(obj, 'database', 'pool', '5', {})
+
+// Add a free-standing comment to the database section
+addComment(obj, 'database', 'Increase pool size under load', {})
+
+// Update the server port
+updateKeyValue(obj, 'server', 'port', '9090')
+
+console.log(stringifyIni(obj, {}))
+// [server]
+// ;Override with SERVER_HOST in production
+// host=127.0.0.1
+// port=9090
+// [database]
+// url=postgres://localhost:5432/app
+// pool=5
+// ;Increase pool size under load
+```
+
+<Note>
+  All editing functions (`addSection`, `addKeyValue`, `updateKeyValue`, `addComment`) mutate the `IniObject` in place. Each function also returns the affected `Block` or `Section`, which you can use for further inspection or chaining without re-querying the object.
+</Note>
